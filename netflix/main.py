@@ -5,6 +5,7 @@ import naive_em
 import em
 from common import GaussianMixture
 from typing import NamedTuple, Tuple
+from rich import print
 
 netflix_incomplete = np.loadtxt("netflix_incomplete.txt")
 X_gold = np.loadtxt('netflix_complete.txt')
@@ -63,9 +64,44 @@ def find_bestk_em(X, K=np.array([1,12])):
     best_bic = np.max(bic_results)
     best_K = K[np.argmax(bic_results)]
     return best_K, best_bic
+########################################################
+#                 IMPLEMENTATION HERE                  #
+########################################################
+
+print(f"\n[bold red]For a 2D toy dataset, we will look for the correct implementation of K-means[/bold red]")
+cost_vector = np.zeros((4, 5))
+for K in range(1, 5):
+    for seed in range(5):
+        mixture2d, post2d = common.init(X, K, seed)
+        mixture2d, post2d, cost = kmeans.run(X, mixture2d, post2d)
+        cost_vector[K-1, seed] = cost  # K-1 because K starts at 1
+best_seeds = np.argmin(cost_vector, axis=1)  # index of best seed for each K
+for K in range(1,5):
+    print(f"the best seed for K={K} is seed={best_seeds[K - 1]} with cost = {cost_vector[K - 1, best_seeds[K - 1]]
+    }")
+    title = f"K-means with K={K}, seed={best_seeds[K-1]}"
+    mixture2d, post2d = common.init(X,K,best_seeds[K-1])
+    mixture2d, post2d, _ = kmeans.run(X,mixture2d,post2d)
+    common.plot(X, mixture2d, post2d, title)
+
+print(f"\n[bold red]Now, in the same 2D toy dataset, we will look for the correct implementation of EM[/bold red]")
+cost_vector = np.zeros((4, 5))
+for K in range(1, 5):
+    for seed in range(5):
+        mixture2d, post2d = common.init(X, K, seed)
+        mixture2d, post2d, cost = em.run(X, mixture2d, post2d)
+        cost_vector[K-1, seed] = cost  # K-1 because K starts at 1
+best_seeds = np.argmax(cost_vector, axis=1)  # index of best seed for each K
+for K in range(1,5):
+    print(f"the best seed for K={K} is seed={best_seeds[K - 1]} with log-likelihood = {cost_vector[K - 1, best_seeds[K - 1]]
+    }")
+    title = f"E-M with K={K}, seed={best_seeds[K-1]}"
+    mixture2d, post2d = common.init(X,K,best_seeds[K-1])
+    mixture2d, post2d, _ = em.run(X,mixture2d,post2d)
+    common.plot(X, mixture2d, post2d, title)
 
 best_seed, max_loglike = em_algo(netflix_incomplete,12,n_seed=5)
-print(max_loglike)
+print(f"the max_loglike is = {max_loglike}")
 mixture, post = common.init(netflix_incomplete, 12, best_seed)
 mixture, post, _ = em.run(netflix_incomplete, mixture, post)
 filled_matrix = em.fill_matrix(netflix_incomplete, mixture)
